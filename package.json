@@ -1,0 +1,34 @@
+{
+  "name": "liquid-glass-obsidian-plugin",
+  "version": "1.5.12",
+  "description": "Native macOS liquid glass material for Obsidian",
+  "main": "main.js",
+  "type": "module",
+  "author": "GavinKalvin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GavinKalvin/LiquidGlass_plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GavinKalvin/LiquidGlass_plugin/issues"
+  },
+  "homepage": "https://github.com/GavinKalvin/LiquidGlass_plugin#readme",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production",
+    "build:native": "pnpm dlx node-gyp@11.3.0 rebuild --target=39.8.3 --arch=arm64 --dist-url=https://electronjs.org/headers && cp build/Release/vibrancy_alpha.node ./vibrancy_alpha.node && codesign --force --sign - ./vibrancy_alpha.node"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "liquid-glass",
+    "glassmorphism"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "esbuild": "0.25.5",
+    "obsidian": "1.13.1",
+    "typescript": "^5.8.3"
+  }
+}

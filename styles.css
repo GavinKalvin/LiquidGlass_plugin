@@ -1,0 +1,212 @@
+/*
+ * Liquid Glass for Obsidian 1.5.10
+ *
+ * Obsidian owns the single native macOS translucency layer. This stylesheet
+ * adds one static interface fill and one static Markdown viewport fill. It
+ * never styles a CodeMirror scroller or paints material on scrolling content.
+ */
+
+/* A detached settings document can render before PluginSettingTab.display().
+ * Keep that bootstrap frame on the host theme instead of transparent black. */
+body.is-popout-modal:not(.is-translucent),
+body:not(.is-translucent):has(.modal.mod-settings) {
+  background-color: var(--background-primary) !important;
+}
+
+body:not(.is-translucent) .modal.mod-settings {
+  background-color: var(--background-primary) !important;
+}
+
+body.liquid-glass-enabled {
+  --lg-surface-rgb: 246, 248, 252;
+  --lg-surface-strong-rgb: 253, 254, 255;
+  --lg-ink-shadow-rgb: 18, 27, 43;
+  --lg-separator-rgb: 62, 72, 88;
+  --lg-divider-color: rgba(
+    var(--lg-separator-rgb),
+    calc(0.12 + var(--lg-border-opacity, 0.46) * 0.34)
+  );
+}
+
+body.theme-dark.liquid-glass-enabled {
+  --lg-surface-rgb: 18, 23, 32;
+  --lg-surface-strong-rgb: 29, 35, 47;
+  --lg-ink-shadow-rgb: 245, 248, 255;
+  --lg-separator-rgb: 202, 211, 226;
+}
+
+/* Remove only Obsidian's single translucent workspace tint. Native vibrancy
+ * remains owned by Obsidian; no other workspace ancestor is forced clear. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .app-container {
+  background-color: transparent !important;
+}
+
+/* Fixed, non-overlapping interface surfaces. Side-dock children are cleared
+ * to reveal the one fill on their parent instead of stacking alpha twice. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .titlebar,
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .workspace-ribbon,
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .side-dock-ribbon,
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-left-split,
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split,
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-root
+  > .workspace-tabs
+  > .workspace-tab-header-container,
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content
+  > .view-header {
+  background-color: rgba(
+    var(--lg-surface-rgb),
+    var(--lg-interface-alpha, 1)
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  :is(.workspace-split.mod-left-split, .workspace-split.mod-right-split)
+  :is(.workspace-tab-header-container, .workspace-sidedock-vault-profile) {
+  background-color: transparent !important;
+}
+
+/* The status bar deliberately remains a readable fixed overlay so note text
+ * cannot visually collide with backlink/word-count text underneath it. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .status-bar {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    calc(0.82 + var(--lg-interface-alpha, 1) * 0.16)
+  ) !important;
+  border-color: var(--lg-divider-color);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, calc(var(--lg-border-opacity, 0.46) * 0.3)),
+    0 7px 20px rgba(5, 10, 22, calc(var(--lg-shadow-strength, 0.14) * 0.36));
+}
+
+/* The only Markdown material surface is Obsidian's fixed view-content shell.
+ * CodeMirror, preview content and all measurement nodes stay untouched. */
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    var(--lg-note-alpha, 1)
+  ) !important;
+}
+
+/* Reading mode adds a second opaque background on its actual scroll viewport.
+ * Clear only a root preview directly inside the Markdown view. Embedded notes,
+ * hover previews and nested Markdown previews are intentionally excluded. */
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  > .markdown-preview-view,
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  > .markdown-reading-view
+  > .markdown-preview-view {
+  background-color: transparent !important;
+}
+
+/* Dividers and controls do not change the material alpha. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-leaf-resize-handle {
+  border-color: var(--lg-divider-color);
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-root
+  > .workspace-tabs
+  > .workspace-tab-header-container {
+  border-color: var(--lg-divider-color);
+  box-shadow: inset 0 -1px 0 var(--lg-divider-color);
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-tab-header {
+  border-radius: calc(var(--lg-radius, 18px) * 0.5);
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-tab-header.is-active {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    calc(var(--lg-interface-alpha, 1) * 0.52)
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--lg-separator-rgb), calc(var(--lg-border-opacity, 0.46) * 0.25)),
+    inset 0 1px 0 rgba(255, 255, 255, calc(var(--lg-border-opacity, 0.46) * 0.38)),
+    0 4px 14px rgba(8, 13, 24, calc(var(--lg-shadow-strength, 0.14) * 0.24));
+}
+
+/* Component-scoped hover feedback avoids the white rectangular spill seen
+ * when generic button/tooltip selectors were used in earlier versions. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  :is(
+    .workspace-ribbon .clickable-icon,
+    .side-dock-ribbon .clickable-icon,
+    .nav-file-title,
+    .nav-folder-title
+  ):hover {
+  color: var(--text-normal) !important;
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    calc(var(--lg-interface-alpha, 1) * 0.46)
+  ) !important;
+}
+
+/* Preserve the explicitly requested text-nearby softening as a static,
+ * opt-in glyph shadow. The default strength is zero and no class is then set. */
+body.theme-light.is-translucent.liquid-glass-enabled.liquid-glass-text-halo:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  .cm-content,
+body.theme-light.is-translucent.liquid-glass-enabled.liquid-glass-text-halo:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  > .markdown-preview-view,
+body.theme-light.is-translucent.liquid-glass-enabled.liquid-glass-text-halo:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  > .markdown-reading-view
+  > .markdown-preview-view {
+  text-shadow:
+    0 1px var(--lg-text-halo-blur, 8px)
+      rgba(var(--lg-ink-shadow-rgb), var(--lg-text-halo-alpha, 0.08)),
+    0 0 calc(var(--lg-text-halo-blur, 8px) * 0.42)
+      rgba(255, 255, 255, calc(var(--lg-text-halo-alpha, 0.08) * 0.7));
+}
+
+body.theme-dark.is-translucent.liquid-glass-enabled.liquid-glass-text-halo:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  .cm-content,
+body.theme-dark.is-translucent.liquid-glass-enabled.liquid-glass-text-halo:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  > .markdown-preview-view,
+body.theme-dark.is-translucent.liquid-glass-enabled.liquid-glass-text-halo:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="markdown"]
+  > .view-content
+  > .markdown-reading-view
+  > .markdown-preview-view {
+  text-shadow:
+    0 1px var(--lg-text-halo-blur, 8px)
+      rgba(var(--lg-ink-shadow-rgb), var(--lg-text-halo-alpha, 0.08)),
+    0 0 calc(var(--lg-text-halo-blur, 8px) * 0.5)
+      rgba(0, 0, 0, calc(var(--lg-text-halo-alpha, 0.08) * 0.85));
+}
+
+.liquid-glass-settings .liquid-glass-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 54px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
