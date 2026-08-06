@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { isAbsolute, join } from "path";
+import { EpubGlassBridge } from "./epub-bridge";
 
 interface LiquidGlassSettings {
   enabled: boolean;
@@ -138,6 +139,7 @@ const REMOVED_CLASSES = [
 const CSS_VARIABLES = [
   "--lg-interface-alpha",
   "--lg-note-alpha",
+  "--lg-note-alpha-percent",
   "--lg-radius",
   "--lg-border-opacity",
   "--lg-shadow-strength",
@@ -156,6 +158,14 @@ export default class LiquidGlassPlugin extends Plugin {
   private nativeSentinelPath: string | null = null;
   private nativeWindows = new Map<NativeWindowBridge, NativeWindowState>();
   private nativeErrorNotified = false;
+  private epubBridge = new EpubGlassBridge(
+    () => ({
+      enabled: this.settings.enabled,
+      noteMaterial: this.settings.noteMaterial,
+      textHaloStrength: this.settings.textHaloStrength,
+    }),
+    (message, error) => console.warn(message, error),
+  );
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -205,6 +215,20 @@ export default class LiquidGlassPlugin extends Plugin {
         this.releaseDocument(win.document);
       }),
     );
+    this.registerEvent(
+      this.app.workspace.on("layout-change", () => {
+        for (const doc of this.managedDocuments) {
+          this.epubBridge.refreshDocument(doc);
+        }
+      }),
+    );
+    this.registerEvent(
+      this.app.workspace.on("css-change", () => {
+        for (const doc of this.managedDocuments) {
+          this.epubBridge.refreshDocument(doc);
+        }
+      }),
+    );
     this.app.workspace.onLayoutReady(() => {
       this.refreshDocuments();
       if (recoveredNativeCrash) {
@@ -217,6 +241,7 @@ export default class LiquidGlassPlugin extends Plugin {
     if (this.saveTimer !== null) window.clearTimeout(this.saveTimer);
     if (this.nativeApplyTimer !== null) window.clearTimeout(this.nativeApplyTimer);
     for (const doc of Array.from(this.managedDocuments)) this.releaseDocument(doc);
+    this.epubBridge.releaseAll();
     this.restoreAllNativeWindows();
     this.primaryDocument = null;
   }
@@ -314,6 +339,7 @@ export default class LiquidGlassPlugin extends Plugin {
     if (!doc.body || !doc.defaultView || doc.defaultView.closed) return;
     this.managedDocuments.add(doc);
     this.applyToDocument(doc);
+    this.epubBridge.manageDocument(doc);
   }
 
   refreshDocuments(): void {
@@ -335,6 +361,7 @@ export default class LiquidGlassPlugin extends Plugin {
   }
 
   private releaseDocument(doc: Document): void {
+    this.epubBridge.releaseDocument(doc);
     this.clearDocument(doc);
     this.managedDocuments.delete(doc);
   }
@@ -352,6 +379,7 @@ export default class LiquidGlassPlugin extends Plugin {
     // detached document therefore never sees transparent CSS with no alpha.
     root.style.setProperty("--lg-interface-alpha", interfaceAlpha.toFixed(3));
     root.style.setProperty("--lg-note-alpha", noteAlpha.toFixed(3));
+    root.style.setProperty("--lg-note-alpha-percent", `${(noteAlpha * 100).toFixed(1)}%`);
     root.style.setProperty("--lg-radius", `${settings.radius}px`);
     root.style.setProperty("--lg-border-opacity", `${settings.borderOpacity / 100}`);
     root.style.setProperty("--lg-shadow-strength", `${settings.shadowStrength / 100}`);
@@ -372,6 +400,7 @@ export default class LiquidGlassPlugin extends Plugin {
       settings.enabled && settings.textHaloStrength > 0,
     );
     body.classList.toggle(ROOT_CLASS, settings.enabled);
+    this.epubBridge.refreshDocument(doc);
     this.applyNativeFog(doc);
   }
 
@@ -662,7 +691,7 @@ class LiquidGlassSettingTab extends PluginSettingTab {
 
     this.addSlider(
       "正文透光率",
-      "单独控制 Markdown 的固定视口背板；100% 完全透景，0% 为不透明正文。不会改变界面透光率。",
+      "单独控制 Markdown 与 EPUB 的固定视口背板；100% 完全透景，0% 为不透明正文。不会改变界面透光率。",
       settings.noteTransparency,
       0,
       100,
@@ -674,7 +703,7 @@ class LiquidGlassSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("正文连续玻璃")
-      .setDesc("开启后在固定视口上绘制一整块连续材质；不改 CodeMirror 或阅读模式的滚动层。")
+      .setDesc("开启后在 Markdown 或 EPUB 的固定视口上绘制一整块连续材质；不改滚动层、图片或媒体。")
       .addToggle((toggle) =>
         toggle.setValue(settings.noteMaterial).onChange(async (value) => {
           settings.noteMaterial = value;
