@@ -1,17 +1,19 @@
 # Liquid Glass for Obsidian
 
-An experimental macOS-only Obsidian plugin that makes the workspace and Markdown surface genuinely translucent while preserving a stable scrolling path.
+An experimental macOS-only Obsidian plugin that makes the workspace, Markdown, and supported EPUB reading surfaces genuinely translucent while preserving a stable scrolling path.
 
 [简体中文说明](README.zh-CN.md)
 
 > [!IMPORTANT]
-> The optional native translucency-depth control included in v1.5.14 is intentionally locked to **macOS arm64, Obsidian 1.13.4, and Electron 39.8.3**. On any other runtime it fails safely and leaves Obsidian's native material unchanged.
+> The optional native translucency-depth control included in v1.5.16 is intentionally locked to **macOS arm64, Obsidian 1.13.4, and Electron 39.8.3**. On any other runtime it fails safely and leaves Obsidian's native material unchanged.
 
 ## What it does
 
 - Uses Obsidian's own macOS translucent-window material as the single backdrop source.
-- Controls interface and Markdown translucency independently.
+- Controls interface and document translucency independently.
 - Keeps material color on fixed viewport shells rather than CodeMirror or reading-mode scrolling nodes.
+- Supports EPUB Reader and Highlighter 0.2.1 through a scoped same-origin iframe bridge that keeps images and media untouched; near-clear, media-free EPUB prose inherits Obsidian's text color for contrast.
+- Applies the interface material to EPUB's fixed reading toolbar and translucent scroll/paged controls.
 - Offers an optional main-window-only control for reducing the opacity of Electron's full-window `NSVisualEffectView`.
 - Preserves the static text halo requested by the original user, with an independent 0–100% control.
 - Provides a one-click return to the v1.5.10 native-material baseline.
@@ -23,19 +25,20 @@ This project does **not** reproduce Apple's private Liquid Glass refraction shad
 The renderer path deliberately avoids techniques that previously caused text flicker, resize lag, and apparent scroll overshoot:
 
 - no `scroll`, `wheel`, or `resize` listeners;
-- no polling, `requestAnimationFrame`, or DOM observers;
+- no polling or `requestAnimationFrame`; scoped EPUB observers only track view, iframe, and theme lifecycle changes;
 - no renderer `backdrop-filter` or large filtered layers;
 - no opacity applied to text, cursors, or Markdown scrolling containers;
 - no mutation of Electron `setVibrancy()` or `setBackgroundColor()`;
 - no native calls from a scrolling or resizing hot path.
 
-The v1.5.10 CSS benchmark is preserved byte-for-byte in v1.5.14.
+The v1.5.10 Markdown rendering path remains unchanged; v1.5.15 added a separately scoped EPUB content path and v1.5.16 extends the fixed interface path to its toolbar.
 
 ## Compatibility
 
 | Feature | Supported environment |
 | --- | --- |
 | Stable CSS material | macOS Obsidian with **Translucent window** enabled |
+| EPUB material | EPUB Reader and Highlighter 0.2.1 with a same-origin epub.js rendition |
 | Native fog-depth control | macOS arm64 + Obsidian 1.13.4 + Electron 39.8.3 |
 | Windows / Linux | Not supported |
 | Intel Mac / Rosetta | Native fog-depth binary not supported |
@@ -67,8 +70,8 @@ If macOS blocks the unsigned local native module, do not disable SIP or weaken s
 ## Settings
 
 - **Interface light transmission** — controls fixed interface surfaces only.
-- **Note light transmission** — controls the fixed Markdown viewport only.
-- **Continuous note glass** — enables the stable Markdown viewport material.
+- **Note light transmission** — controls fixed Markdown and supported EPUB viewports.
+- **Continuous note glass** — enables the stable Markdown/EPUB viewport material.
 - **Deepen native translucency** — lowers the native fog layer of the main workspace window.
 - **Native translucency depth** — direction is now intuitive: 0% equals the exact Obsidian host baseline, higher values reveal more of the wallpaper or application behind the window, and 100% is the clearest safe-glass endpoint while retaining 35% of the captured native material.
 - **Restore v1.5.10** — restores the native material without resetting note, interface, radius, or halo preferences.
@@ -113,7 +116,7 @@ The native script downloads the Electron 39.8.3 headers through `node-gyp`, buil
 
 ## Privacy
 
-The plugin has no telemetry, analytics, or network requests. It does not read note contents. The only disk write outside normal Obsidian plugin settings is the temporary `.native-alpha-pending` crash sentinel in the plugin directory.
+The plugin has no telemetry, analytics, or network requests. It does not read note or EPUB text. The only disk write outside normal Obsidian plugin settings is the temporary `.native-alpha-pending` crash sentinel in the plugin directory.
 
 ## Project documentation
 

@@ -2,9 +2,18 @@
 
 [English documentation](README.md)
 
-一个只提供 **Liquid Glass** 的 macOS Obsidian 插件。`1.5.14` 完整保留 `1.5.10` 的稳定渲染路径，并把方向相反的“系统雾层保留”改为符合直觉的“原生透景强度”。
+一个只提供 **Liquid Glass** 的 macOS Obsidian 插件。`1.5.16` 保留稳定渲染路径，并为 **EPUB Reader and Highlighter 0.2.1** 增加了不修改图片的同源 iframe 兼容桥和固定控制栏材质。
 
-## 1.5.14 的正确控制方向
+## 1.5.16 的 EPUB 兼容
+
+- EPUB 顶部控制栏使用“界面透光率”，滚动/分页切换器使用稳定的半透明控件填充；
+- EPUB 正文使用与 Markdown 相同的“正文透光率”和“正文连续玻璃”开关；
+- 材质只画在 Obsidian 的固定 EPUB 视口，并保留阅读器所选灰、米、护眼绿、深色或自定义背景作为 tint；
+- iframe 内只清除 `html` 和 `body` 背景；接近全透明时，文字色与光晕只作用于不含媒体的语义正文块，含图片、SVG、音视频、canvas、嵌入对象、嵌套 frame 或 MathML 的块保持原有继承链；
+- 换章、分页/滚动切换、主题切换和多窗格由事件驱动的局部观察器处理，不监听书籍文字、scroll、wheel 或 resize；
+- 关闭、窗口关闭或插件卸载时，会移除注入样式、标记、事件和观察器。
+
+## 原生透景的正确控制方向
 
 - `1.5.10` 的界面与正文透光率在 100% 时，插件色层已经是完全透明；剩余灰雾来自 macOS 的全窗 `NSVisualEffectView`；
 - “深化原生透景”只调整主窗口的原生玻璃背板，不改变 WebContents、文字、光标、CodeMirror 或阅读滚动层；
@@ -37,13 +46,15 @@
 1. Obsidian 的“半透明窗口”设置创建并管理 macOS 原生透景；
 2. 插件只清除 `.app-container` 的单一宿主色层；
 3. 固定界面区域使用界面 alpha；
-4. 固定 Markdown `.view-content` 使用正文 alpha；
-5. CodeMirror 和阅读模式的实际滚动层只移动文字，不承载材质颜色。
+4. EPUB 固定控制栏同样使用界面 alpha；
+5. 固定 Markdown `.view-content` 使用正文 alpha；
+6. 兼容的 EPUB 固定视口使用相同 alpha 与 EPUB 主题 tint；
+7. CodeMirror 和阅读模式的实际滚动层只移动文字，不承载材质颜色。
 
 ## 设置
 
 - 界面透光率：0–100%，只控制固定界面区域；
-- 正文透光率：0–100%，只控制 Markdown 固定视口；
+- 正文透光率：0–100%，控制 Markdown 与兼容 EPUB 的固定视口；
 - 深化原生透景：启用当前机器专用的原生雾层深度控制；
 - 原生透景强度：0% 为 Obsidian 原始玻璃，数值越高透景越强，100% 为仍保留系统材质的最强安全透景；
 - 正文连续玻璃：启用或停用独立正文材质；

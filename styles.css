@@ -2,8 +2,8 @@
  * Liquid Glass for Obsidian 1.5.10
  *
  * Obsidian owns the single native macOS translucency layer. This stylesheet
- * adds one static interface fill and one static Markdown viewport fill. It
- * never styles a CodeMirror scroller or paints material on scrolling content.
+ * adds one static interface fill and one static document viewport fill. It
+ * never paints material on CodeMirror, EPUB scrolling content, or media.
  */
 
 /* A detached settings document can render before PluginSettingTab.display().
@@ -64,6 +64,54 @@ body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
   ) !important;
 }
 
+/* EPUB's fixed reading toolbar is interface chrome, not book content. Give
+ * the bar the same single native-material tint as Obsidian's other fixed UI
+ * surfaces. The paged/scroll toggle uses translucent fills so it remains
+ * legible without reintroducing an opaque strip. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="epub-reader-view"]
+  > .view-content
+  > .epub-tb {
+  background-color: rgba(
+    var(--lg-surface-rgb),
+    var(--lg-interface-alpha, 1)
+  ) !important;
+  border-bottom-color: var(--lg-divider-color) !important;
+  box-shadow: 0 7px 20px rgba(
+    5,
+    10,
+    22,
+    calc(var(--lg-shadow-strength, 0.14) * 0.3)
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="epub-reader-view"]
+  > .view-content
+  > .epub-tb
+  .epub-tb-toggle {
+  background-color: rgba(
+    var(--lg-separator-rgb),
+    calc(0.08 + var(--lg-border-opacity, 0.46) * 0.18)
+  ) !important;
+  box-shadow: inset 0 0 0 1px var(--lg-divider-color) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-leaf-content[data-type="epub-reader-view"]
+  > .view-content
+  > .epub-tb
+  .epub-tb-toggle-thumb {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    calc(0.42 + var(--lg-interface-alpha, 1) * 0.48)
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 2px 7px rgba(5, 10, 22, calc(var(--lg-shadow-strength, 0.14) * 0.55)) !important;
+}
+
 body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
   :is(.workspace-split.mod-left-split, .workspace-split.mod-right-split)
   :is(.workspace-tab-header-container, .workspace-sidedock-vault-profile) {
@@ -93,6 +141,60 @@ body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-full
     var(--lg-surface-strong-rgb),
     var(--lg-note-alpha, 1)
   ) !important;
+}
+
+/* EPUB Reader and Highlighter renders each book section inside an epub.js
+ * iframe and also writes its selected theme color onto two host containers.
+ * The toolbar material is handled separately as fixed interface chrome above.
+ * Keep the book material on the fixed Obsidian view shell, tint it with that
+ * EPUB theme, and clear only the known rendition containers. The iframe bridge in
+ * main.js clears html/body inside the same-origin book document. No image,
+ * SVG, video, canvas, filter, backdrop-filter or opacity selector is used. */
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="epub-reader-view"].liquid-glass-epub-bridge
+  > .view-content {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    var(--lg-note-alpha, 1)
+  ) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--lg-epub-theme-color, rgb(var(--lg-surface-strong-rgb)))
+      var(--lg-note-alpha-percent, 100%),
+    transparent
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="epub-reader-view"].liquid-glass-epub-bridge
+  > .view-content
+  > .epub-tb
+  + div,
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="epub-reader-view"].liquid-glass-epub-bridge
+  > .view-content
+  > .epub-tb
+  + div
+  .epub-container,
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="epub-reader-view"].liquid-glass-epub-bridge
+  > .view-content
+  > .epub-tb
+  + div
+  .epub-view,
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="epub-reader-view"].liquid-glass-epub-bridge
+  > .view-content
+  > .epub-tb
+  + div
+  .epub-view
+  > iframe {
+  background-color: transparent !important;
 }
 
 /* Reading mode adds a second opaque background on its actual scroll viewport.

@@ -1,6 +1,6 @@
 {
   "name": "liquid-glass-obsidian-plugin",
-  "version": "1.5.14",
+  "version": "1.5.16",
   "description": "Native macOS liquid glass material for Obsidian",
   "main": "main.js",
   "type": "module",
