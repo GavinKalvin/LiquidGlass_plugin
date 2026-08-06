@@ -6,7 +6,7 @@ The CSS material path requires macOS and Obsidian's **Translucent window** optio
 
 ## Native fog-depth profile
 
-The prebuilt `vibrancy_alpha.node` in v1.5.12 is accepted only when all of the following match:
+The prebuilt `vibrancy_alpha.node` in v1.5.14 is accepted only when all of the following match:
 
 | Component | Required value |
 | --- | --- |

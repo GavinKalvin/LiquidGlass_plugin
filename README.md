@@ -5,7 +5,7 @@ An experimental macOS-only Obsidian plugin that makes the workspace and Markdown
 [简体中文说明](README.zh-CN.md)
 
 > [!IMPORTANT]
-> The optional native fog-depth control included in v1.5.12 is intentionally locked to **macOS arm64, Obsidian 1.13.4, and Electron 39.8.3**. On any other runtime it fails safely and leaves Obsidian's native material unchanged.
+> The optional native translucency-depth control included in v1.5.14 is intentionally locked to **macOS arm64, Obsidian 1.13.4, and Electron 39.8.3**. On any other runtime it fails safely and leaves Obsidian's native material unchanged.
 
 ## What it does
 
@@ -29,7 +29,7 @@ The renderer path deliberately avoids techniques that previously caused text fli
 - no mutation of Electron `setVibrancy()` or `setBackgroundColor()`;
 - no native calls from a scrolling or resizing hot path.
 
-The v1.5.10 CSS benchmark is preserved byte-for-byte in v1.5.12.
+The v1.5.10 CSS benchmark is preserved byte-for-byte in v1.5.14.
 
 ## Compatibility
 
@@ -70,7 +70,7 @@ If macOS blocks the unsigned local native module, do not disable SIP or weaken s
 - **Note light transmission** — controls the fixed Markdown viewport only.
 - **Continuous note glass** — enables the stable Markdown viewport material.
 - **Deepen native translucency** — lowers the native fog layer of the main workspace window.
-- **System fog retained** — 100% equals the v1.5.10 baseline; lower values reveal more of the wallpaper or application behind Obsidian.
+- **Native translucency depth** — direction is now intuitive: 0% equals the exact Obsidian host baseline, higher values reveal more of the wallpaper or application behind the window, and 100% is the clearest safe-glass endpoint while retaining 35% of the captured native material.
 - **Restore v1.5.10** — restores the native material without resetting note, interface, radius, or halo preferences.
 - **Text halo** — optional static glyph softening; 0% disables it completely.
 
