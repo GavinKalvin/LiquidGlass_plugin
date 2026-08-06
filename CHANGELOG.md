@@ -2,6 +2,33 @@
 
 All notable changes to this project are documented here.
 
+## 1.5.16 — 2026-08-06
+
+### Added
+
+- Extended the fixed interface material to EPUB Reader and Highlighter's reading toolbar.
+- Replaced the opaque scroll/paged toggle track and thumb with stable translucent control fills.
+
+### Preserved
+
+- The toolbar uses interface transmission while the book viewport continues to use note transmission.
+- No renderer blur, backdrop filter, opacity, polling, or scroll/resize listener was added.
+
+## 1.5.15 — 2026-08-06
+
+### Added
+
+- Added an event-driven compatibility bridge for EPUB Reader and Highlighter 0.2.1.
+- Preserved each EPUB background theme as a tint on the fixed Obsidian viewport while allowing the native material to show through.
+- Extended the optional static text halo into same-origin EPUB documents.
+- At near-clear note transparency, media-free EPUB prose blocks inherit Obsidian's normal text color so light-theme books remain readable over dark glass and vice versa.
+
+### Safety
+
+- The iframe bridge clears only `html` and `body` backgrounds. Near-clear color and halo rules target guarded semantic prose blocks and exclude any block containing images, SVG, audio, video, canvas, embedded objects, nested frames, or MathML, preserving media `currentColor`, filters, and opacity.
+- EPUB observers are scoped to view, iframe, theme, and window lifecycle events. They never observe book text, scrolling, wheel, or resize activity.
+- Disabling, closing a window, or unloading removes every injected class, style, listener, observer, and host theme variable.
+
 ## 1.5.14 — 2026-08-06
 
 ### Fixed
