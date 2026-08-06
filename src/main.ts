@@ -20,7 +20,7 @@ interface LiquidGlassSettings {
   textHaloStrength: number;
   noteMaterial: boolean;
   nativeFogEnabled: boolean;
-  nativeFogRetention: number;
+  nativeGlassDepth: number;
 }
 
 interface LegacySettings extends Partial<LiquidGlassSettings> {
@@ -31,6 +31,7 @@ interface LegacySettings extends Partial<LiquidGlassSettings> {
   saturation?: number;
   noteSheet?: boolean;
   motion?: boolean;
+  nativeFogRetention?: number;
   polishMedia?: boolean;
 }
 
@@ -44,7 +45,7 @@ const DEFAULT_SETTINGS: LiquidGlassSettings = {
   textHaloStrength: 0,
   noteMaterial: true,
   nativeFogEnabled: false,
-  nativeFogRetention: 100,
+  nativeGlassDepth: 0,
 };
 
 interface NativeWindowBridge {
@@ -92,6 +93,35 @@ const NATIVE_RUNTIME = {
   obsidian: "1.13.4",
   platform: "darwin",
 } as const;
+
+// NSVisualEffectView.alphaValue attenuates the whole native material, not only
+// its tint. Alpha 0 therefore removes blur and vibrancy as well as the fog.
+// Keep a visible material floor, while making the user-facing direction
+// intuitive: 0% is Obsidian's captured baseline and 100% is the clearest safe
+// glass. The curve also preserves the established 65% visual point.
+const NATIVE_MATERIAL_ALPHA_FLOOR = 0.35;
+const NATIVE_RETENTION_CURVE_EXPONENT = 1.8;
+const NATIVE_DEPTH_CURVE_EXPONENT = 1.43260279979242;
+
+function nativeMaterialAlpha(depth: number, baselineAlpha: number): number {
+  const depthRatio = Math.min(1, Math.max(0, depth / 100));
+  const materialFactor = 1
+    - (1 - NATIVE_MATERIAL_ALPHA_FLOOR)
+      * Math.pow(depthRatio, NATIVE_DEPTH_CURVE_EXPONENT);
+  return Math.min(1, Math.max(0, baselineAlpha * materialFactor));
+}
+
+function legacyRetentionToDepth(retention: number): number {
+  const retentionRatio = Math.min(1, Math.max(0, retention / 100));
+  const legacyFactor = NATIVE_MATERIAL_ALPHA_FLOOR
+    + (1 - NATIVE_MATERIAL_ALPHA_FLOOR)
+      * Math.pow(retentionRatio, NATIVE_RETENTION_CURVE_EXPONENT);
+  const normalizedReduction = (1 - legacyFactor)
+    / (1 - NATIVE_MATERIAL_ALPHA_FLOOR);
+  return Math.round(
+    100 * Math.pow(normalizedReduction, 1 / NATIVE_DEPTH_CURVE_EXPONENT),
+  );
+}
 
 const ROOT_CLASS = "liquid-glass-enabled";
 const NOTE_MATERIAL_CLASS = "liquid-glass-note-material";
@@ -240,9 +270,11 @@ export default class LiquidGlassPlugin extends Plugin {
         saved?.nativeFogEnabled,
         DEFAULT_SETTINGS.nativeFogEnabled,
       ),
-      nativeFogRetention: numberSetting(
-        saved?.nativeFogRetention,
-        DEFAULT_SETTINGS.nativeFogRetention,
+      nativeGlassDepth: numberSetting(
+        saved?.nativeGlassDepth,
+        typeof saved?.nativeFogRetention === "number"
+          ? legacyRetentionToDepth(saved.nativeFogRetention)
+          : DEFAULT_SETTINGS.nativeGlassDepth,
         0,
         100,
       ),
@@ -397,7 +429,7 @@ export default class LiquidGlassPlugin extends Plugin {
   async restoreNativeBenchmark(): Promise<void> {
     this.restoreAllNativeWindows();
     this.settings.nativeFogEnabled = false;
-    this.settings.nativeFogRetention = 100;
+    this.settings.nativeGlassDepth = 0;
     await this.saveSettings();
     new Notice("已恢复 v1.5.10 原生雾层；正文与界面设置保持不变");
   }
@@ -430,14 +462,21 @@ export default class LiquidGlassPlugin extends Plugin {
       }
 
       const priorState = this.nativeWindows.get(bridge);
-      const targetAlpha = this.settings.nativeFogRetention / 100;
-      if (priorState && Math.abs(priorState.appliedAlpha - targetAlpha) < 0.001) return;
-
       const state: NativeWindowState = priorState ?? {
         appliedAlpha: currentAlpha,
         baselineAlpha: currentAlpha,
         document: doc,
       };
+      const targetAlpha = nativeMaterialAlpha(
+        this.settings.nativeGlassDepth,
+        state.baselineAlpha,
+      );
+      if (
+        priorState
+        && Math.abs(priorState.appliedAlpha - targetAlpha) < 0.001
+        && Math.abs(currentAlpha - targetAlpha) < 0.001
+      ) return;
+
       this.withNativeSentinel(() => {
         if (!addon.setAlpha(handle, targetAlpha)) {
           throw new Error("原生玻璃层拒绝了透明度更新");
@@ -566,7 +605,7 @@ export default class LiquidGlassPlugin extends Plugin {
       if (!existsSync(sentinel)) return false;
       unlinkSync(sentinel);
       this.settings.nativeFogEnabled = false;
-      this.settings.nativeFogRetention = 100;
+      this.settings.nativeGlassDepth = 0;
       await this.saveData({ ...this.settings });
       return true;
     } catch {
@@ -651,23 +690,20 @@ class LiquidGlassSettingTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(settings.nativeFogEnabled).onChange(async (value) => {
           settings.nativeFogEnabled = value;
-          if (value && settings.nativeFogRetention >= 100) {
-            settings.nativeFogRetention = 65;
-          }
           await this.plugin.saveSettings();
           this.display();
         }),
       );
 
     this.addSlider(
-      "系统雾层保留",
-      "100% 等于 v1.5.10 标杆；数值越低，墙纸和后方软件越清楚。此项独立于界面/正文透光率，推荐先从 65% 开始。",
-      settings.nativeFogRetention,
+      "原生透景强度",
+      "方向已修正：0% 为 Obsidian 原始玻璃，数值越高透景越强；65% 延续上一版推荐效果；100% 为最强安全透景，仍保留必要的系统玻璃材质。",
+      settings.nativeGlassDepth,
       0,
       100,
       1,
       (value) => {
-        settings.nativeFogRetention = value;
+        settings.nativeGlassDepth = value;
       },
       "%",
       false,
