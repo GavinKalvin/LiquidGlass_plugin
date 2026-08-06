@@ -4,7 +4,9 @@
 
 Obsidian owns the native macOS translucent-window material. The plugin normally owns only static CSS state attached to Obsidian documents.
 
-The optional v1.5.12 native profile narrows its ownership to the primary workspace window and one property: the alpha of Electron's existing full-window `NSVisualEffectView`. It does not create, replace, or change the material type.
+The optional v1.5.14 native profile narrows its ownership to the primary workspace window and one property: the alpha of Electron's existing full-window `NSVisualEffectView`. It does not create, replace, or change the material type.
+
+The user-facing translucency-depth value is not written as an absolute view alpha. It is mapped relative to the captured host baseline through a safe curve whose physical range is `baseline` at 0% to `baseline × 0.35` at 100%. This makes higher values produce stronger translucency without allowing the clearest setting to hide the blur and vibrancy view.
 
 ## Renderer layers
 
