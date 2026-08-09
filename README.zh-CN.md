@@ -2,7 +2,16 @@
 
 [English documentation](README.md)
 
-一个只提供 **Liquid Glass** 的 macOS Obsidian 插件。`1.5.16` 保留稳定渲染路径，并为 **EPUB Reader and Highlighter 0.2.1** 增加了不修改图片的同源 iframe 兼容桥和固定控制栏材质。
+一个只提供 **Liquid Glass** 的 macOS Obsidian 插件。`1.5.17` 保留稳定渲染路径，并在 `1.5.16` 的 EPUB 支持基础上，为 **Current Note AI 0.1.3** 增加右侧栏专用的连续玻璃材质。
+
+## 1.5.17 的 Current Note AI 兼容
+
+- 只在 Liquid Glass 已启用、Obsidian 半透明窗口已开启、非全屏且 Current Note AI 位于右侧栏时生效；
+- 清除 Current Note AI 根视图的不透明背景，复用右侧栏已有的单一原生材质；
+- history、context、proposal 和 assistant 气泡使用轻量静态 tint，composer 使用较强但仍透明的输入底板；
+- operation 与 textarea 保持透明，避免嵌套 alpha 叠加；用户气泡保留高对比 accent，diff 只保留透明红绿语义色；
+- 不新增 `filter`、`backdrop-filter`、元素 `opacity`、轮询、动画或原生模块改动；
+- 关闭 Liquid Glass、关闭半透明窗口、进入全屏或将视图移出右侧栏后，自动恢复 Current Note AI 原始样式。
 
 ## 1.5.16 的 EPUB 兼容
 
@@ -48,8 +57,9 @@
 3. 固定界面区域使用界面 alpha；
 4. EPUB 固定控制栏同样使用界面 alpha；
 5. 固定 Markdown `.view-content` 使用正文 alpha；
-6. 兼容的 EPUB 固定视口使用相同 alpha 与 EPUB 主题 tint；
-7. CodeMirror 和阅读模式的实际滚动层只移动文字，不承载材质颜色。
+6. Current Note AI 右侧栏清除不透明根背景，并用静态界面 tint 保持卡片与输入区层级；
+7. 兼容的 EPUB 固定视口使用相同 alpha 与 EPUB 主题 tint；
+8. CodeMirror 和阅读模式的实际滚动层只移动文字，不承载材质颜色。
 
 ## 设置
 

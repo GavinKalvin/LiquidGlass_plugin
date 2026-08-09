@@ -1,17 +1,18 @@
 # Liquid Glass for Obsidian
 
-An experimental macOS-only Obsidian plugin that makes the workspace, Markdown, and supported EPUB reading surfaces genuinely translucent while preserving a stable scrolling path.
+An experimental macOS-only Obsidian plugin that makes the workspace, Markdown, Current Note AI sidebar, and supported EPUB reading surfaces genuinely translucent while preserving a stable scrolling path.
 
 [简体中文说明](README.zh-CN.md)
 
 > [!IMPORTANT]
-> The optional native translucency-depth control included in v1.5.16 is intentionally locked to **macOS arm64, Obsidian 1.13.4, and Electron 39.8.3**. On any other runtime it fails safely and leaves Obsidian's native material unchanged.
+> The bundled optional native translucency-depth control is intentionally locked to **macOS arm64, Obsidian 1.13.4, and Electron 39.8.3**. On any other runtime it fails safely and leaves Obsidian's native material unchanged.
 
 ## What it does
 
 - Uses Obsidian's own macOS translucent-window material as the single backdrop source.
 - Controls interface and document translucency independently.
 - Keeps material color on fixed viewport shells rather than CodeMirror or reading-mode scrolling nodes.
+- Adapts Current Note AI 0.1.3 through a right-sidebar-only static material layer that preserves readable cards, messages, diffs, and composer controls.
 - Supports EPUB Reader and Highlighter 0.2.1 through a scoped same-origin iframe bridge that keeps images and media untouched; near-clear, media-free EPUB prose inherits Obsidian's text color for contrast.
 - Applies the interface material to EPUB's fixed reading toolbar and translucent scroll/paged controls.
 - Offers an optional main-window-only control for reducing the opacity of Electron's full-window `NSVisualEffectView`.
@@ -31,13 +32,14 @@ The renderer path deliberately avoids techniques that previously caused text fli
 - no mutation of Electron `setVibrancy()` or `setBackgroundColor()`;
 - no native calls from a scrolling or resizing hot path.
 
-The v1.5.10 Markdown rendering path remains unchanged; v1.5.15 added a separately scoped EPUB content path and v1.5.16 extends the fixed interface path to its toolbar.
+The v1.5.10 Markdown rendering path remains unchanged; v1.5.15 added a separately scoped EPUB content path, v1.5.16 extended it to the fixed reading toolbar, and v1.5.17 adds a separately scoped Current Note AI sidebar path.
 
 ## Compatibility
 
 | Feature | Supported environment |
 | --- | --- |
 | Stable CSS material | macOS Obsidian with **Translucent window** enabled |
+| Current Note AI material | Current Note AI 0.1.3 in the right sidebar |
 | EPUB material | EPUB Reader and Highlighter 0.2.1 with a same-origin epub.js rendition |
 | Native fog-depth control | macOS arm64 + Obsidian 1.13.4 + Electron 39.8.3 |
 | Windows / Linux | Not supported |

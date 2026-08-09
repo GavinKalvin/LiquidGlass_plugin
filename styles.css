@@ -118,6 +118,141 @@ body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
   background-color: transparent !important;
 }
 
+/* Current Note AI is a right-sidebar interface, so it reuses the side dock's
+ * one continuous interface material instead of creating another backdrop.
+ * Clear only its paint-owning shell, then use static tints for the few
+ * semantic surfaces that need separation and readable contrast. */
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  > .view-content.current-note-ai-view {
+  --lg-cnai-elevated-alpha: calc(
+    0.14 + var(--lg-interface-alpha, 1) * 0.36
+  );
+  --lg-cnai-composer-alpha: calc(
+    0.28 + var(--lg-interface-alpha, 1) * 0.42
+  );
+  background-color: transparent !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-header {
+  border-bottom-color: var(--lg-divider-color) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  :is(
+    .current-note-ai-history-panel,
+    .current-note-ai-context,
+    .current-note-ai-proposal,
+    .current-note-ai-message-row.is-assistant .current-note-ai-bubble
+  ) {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    var(--lg-cnai-elevated-alpha)
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  :is(
+    .current-note-ai-history-panel,
+    .current-note-ai-context,
+    .current-note-ai-proposal
+  ) {
+  border-color: var(--lg-divider-color) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-history-panel {
+  box-shadow: 0 7px 20px rgba(
+    5,
+    10,
+    22,
+    calc(var(--lg-shadow-strength, 0.14) * 0.34)
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-message-row.is-assistant
+  .current-note-ai-bubble {
+  box-shadow: inset 0 0 0 1px rgba(
+    var(--lg-separator-rgb),
+    calc(var(--lg-border-opacity, 0.46) * 0.22)
+  );
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-composer {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    var(--lg-cnai-composer-alpha)
+  ) !important;
+  border-top-color: var(--lg-divider-color) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-composer
+  textarea {
+  background-color: transparent !important;
+  border-color: var(--lg-divider-color) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-operation {
+  background-color: transparent !important;
+  border-color: var(--lg-divider-color) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-message-row.is-user
+  .current-note-ai-bubble {
+  background-color: color-mix(
+    in srgb,
+    var(--interactive-accent) 90%,
+    transparent
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-diff-block.is-removed {
+  background-color: color-mix(
+    in srgb,
+    var(--color-red) 12%,
+    transparent
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-right-split
+  .workspace-leaf-content[data-type="current-note-ai-view"]
+  .current-note-ai-diff-block.is-added {
+  background-color: color-mix(
+    in srgb,
+    var(--color-green) 12%,
+    transparent
+  ) !important;
+}
+
 /* The status bar deliberately remains a readable fixed overlay so note text
  * cannot visually collide with backlink/word-count text underneath it. */
 body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .status-bar {

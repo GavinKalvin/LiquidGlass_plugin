@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here.
 
+## 1.5.17 — 2026-08-09
+
+### Added
+
+- Added a scoped Liquid Glass compatibility layer for the Current Note AI 0.1.3 right-sidebar view.
+- Reused the side dock's single native-material tint while adding restrained static surfaces for conversation context, proposals, assistant messages, and the composer.
+
+### Fixed
+
+- Removed Current Note AI's opaque root, operation, textarea, and diff backgrounds when Liquid Glass is active in a translucent, non-fullscreen right sidebar.
+- Preserved high-contrast user messages and semantic added/removed diff colors without stacking opaque interface layers.
+
+### Preserved
+
+- No renderer blur, backdrop filter, element opacity, polling, animation, or native-module change was added.
+- Disabling Liquid Glass, disabling the translucent window, entering fullscreen, or moving the view outside the right sidebar restores Current Note AI's original styling.
+
 ## 1.5.16 — 2026-08-06
 
 ### Added
