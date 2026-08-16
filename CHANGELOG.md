@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## 1.5.18 — 2026-08-16
+
+### Fixed
+
+- Extended the stable document material to Obsidian's empty new-tab view, so closing every page no longer reveals the opaque host background.
+
+### Preserved
+
+- The empty view reuses note transmission on its fixed `view-content` shell; no scroll container, CodeMirror node, filter, backdrop filter, observer, or native material behavior was changed.
+
 ## 1.5.17 — 2026-08-09
 
 ### Added

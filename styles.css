@@ -266,11 +266,16 @@ body.is-translucent.liquid-glass-enabled:not(.is-fullscreen) .status-bar {
     0 7px 20px rgba(5, 10, 22, calc(var(--lg-shadow-strength, 0.14) * 0.36));
 }
 
-/* The only Markdown material surface is Obsidian's fixed view-content shell.
- * CodeMirror, preview content and all measurement nodes stay untouched. */
+/* Markdown and Obsidian's empty new-tab view share the same fixed document
+ * material surface. CodeMirror, preview content and all measurement nodes
+ * stay untouched. */
 body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
   .workspace-split.mod-root
   .workspace-leaf-content[data-type="markdown"]
+  > .view-content,
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="empty"]
   > .view-content {
   background-color: rgba(
     var(--lg-surface-strong-rgb),
