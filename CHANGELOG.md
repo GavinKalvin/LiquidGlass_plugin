@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## 1.5.18 — 2026-09-30
+
+### Fixed
+
+- Extended the stable document material to Obsidian's empty new-tab view, so closing every page no longer reveals the opaque host background.
+- Added a scoped compatibility layer for Gallery Explorer's main workspace view: the gallery root now reuses note transmission and its fixed toolbar reuses interface transmission.
+
+### Preserved
+
+- The empty view reuses note transmission on its fixed `view-content` shell; no scroll container, CodeMirror node, filter, backdrop filter, observer, or native material behavior was changed.
+- Gallery cards, PDF/EPUB cover images, SVG, selection states, opacity, filters, and media rendering remain owned by Gallery Explorer and are not modified.
+
 ## 1.5.17 — 2026-08-09
 
 ### Added
