@@ -283,6 +283,30 @@ body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-full
   ) !important;
 }
 
+/* Gallery Explorer's root is a fixed document surface, while its toolbar is
+ * fixed interface chrome. Cards and media are intentionally left untouched. */
+body.is-translucent.liquid-glass-enabled.liquid-glass-note-material:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="gallery-explorer-view"]
+  > .view-content.gallery-explorer-view {
+  background-color: rgba(
+    var(--lg-surface-strong-rgb),
+    var(--lg-note-alpha, 1)
+  ) !important;
+}
+
+body.is-translucent.liquid-glass-enabled:not(.is-fullscreen)
+  .workspace-split.mod-root
+  .workspace-leaf-content[data-type="gallery-explorer-view"]
+  > .view-content.gallery-explorer-view
+  > .gallery-explorer-toolbar {
+  background-color: rgba(
+    var(--lg-surface-rgb),
+    var(--lg-interface-alpha, 1)
+  ) !important;
+  border-bottom-color: var(--lg-divider-color) !important;
+}
+
 /* EPUB Reader and Highlighter renders each book section inside an epub.js
  * iframe and also writes its selected theme color onto two host containers.
  * The toolbar material is handled separately as fixed interface chrome above.
