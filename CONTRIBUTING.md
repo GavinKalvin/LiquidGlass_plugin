@@ -18,7 +18,7 @@ Before submitting a change:
 2. Confirm no renderer `backdrop-filter`, scroll listeners, polling, or observers were introduced.
 3. Test reading view and live preview with a long note.
 4. Open and close the detached settings window.
-5. Toggle native fog off and on; confirm the exact alpha is restored.
+5. Toggle native control and enhanced material off and on; confirm both the exact alpha and original material are restored. Confirm increasing depth reveals more native backdrop, rather than accepting an alpha-only numeric test as visual proof.
 6. Resize the window and perform sustained trackpad scrolling.
 7. Disable or unload the plugin and verify the native baseline returns.
 

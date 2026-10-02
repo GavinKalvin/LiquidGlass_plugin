@@ -10,6 +10,17 @@ import {
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { isAbsolute, join } from "path";
 import { EpubGlassBridge } from "./epub-bridge";
+import { configureSliderValue } from "./settings-slider";
+import {
+  NATIVE_DEPTH_MAX,
+  NATIVE_DEPTH_SCHEMA,
+  NATIVE_PROFILE,
+  NativeMaterialState,
+  isNativeMaterialState,
+  migrateNativeDepth,
+  nativeTargetState,
+  supportsNativeRuntime,
+} from "./native-material";
 
 interface LiquidGlassSettings {
   enabled: boolean;
@@ -22,6 +33,8 @@ interface LiquidGlassSettings {
   noteMaterial: boolean;
   nativeFogEnabled: boolean;
   nativeGlassDepth: number;
+  nativeDepthSchema: number;
+  nativeEnhancedMaterial: boolean;
 }
 
 interface LegacySettings extends Partial<LiquidGlassSettings> {
@@ -46,7 +59,9 @@ const DEFAULT_SETTINGS: LiquidGlassSettings = {
   textHaloStrength: 0,
   noteMaterial: true,
   nativeFogEnabled: false,
-  nativeGlassDepth: 0,
+  nativeGlassDepth: NATIVE_DEPTH_MAX,
+  nativeDepthSchema: NATIVE_DEPTH_SCHEMA,
+  nativeEnhancedMaterial: false,
 };
 
 interface NativeWindowBridge {
@@ -76,52 +91,17 @@ interface NativeHostWindow extends Window {
 }
 
 interface NativeVibrancyAddon {
-  getAlpha(handle: Uint8Array): number;
+  getState(handle: Uint8Array): unknown;
   inspect(handle: Uint8Array): string;
   processId(): number;
-  setAlpha(handle: Uint8Array, alpha: number): boolean;
+  setState(handle: Uint8Array, state: NativeMaterialState): boolean;
+  stateVersion(): number;
 }
 
 interface NativeWindowState {
-  appliedAlpha: number;
-  baselineAlpha: number;
+  applied: NativeMaterialState;
+  baseline: NativeMaterialState;
   document: Document;
-}
-
-const NATIVE_RUNTIME = {
-  arch: "arm64",
-  electron: "39.8.3",
-  obsidian: "1.13.4",
-  platform: "darwin",
-} as const;
-
-// NSVisualEffectView.alphaValue attenuates the whole native material, not only
-// its tint. Alpha 0 therefore removes blur and vibrancy as well as the fog.
-// Keep a visible material floor, while making the user-facing direction
-// intuitive: 0% is Obsidian's captured baseline and 100% is the clearest safe
-// glass. The curve also preserves the established 65% visual point.
-const NATIVE_MATERIAL_ALPHA_FLOOR = 0.35;
-const NATIVE_RETENTION_CURVE_EXPONENT = 1.8;
-const NATIVE_DEPTH_CURVE_EXPONENT = 1.43260279979242;
-
-function nativeMaterialAlpha(depth: number, baselineAlpha: number): number {
-  const depthRatio = Math.min(1, Math.max(0, depth / 100));
-  const materialFactor = 1
-    - (1 - NATIVE_MATERIAL_ALPHA_FLOOR)
-      * Math.pow(depthRatio, NATIVE_DEPTH_CURVE_EXPONENT);
-  return Math.min(1, Math.max(0, baselineAlpha * materialFactor));
-}
-
-function legacyRetentionToDepth(retention: number): number {
-  const retentionRatio = Math.min(1, Math.max(0, retention / 100));
-  const legacyFactor = NATIVE_MATERIAL_ALPHA_FLOOR
-    + (1 - NATIVE_MATERIAL_ALPHA_FLOOR)
-      * Math.pow(retentionRatio, NATIVE_RETENTION_CURVE_EXPONENT);
-  const normalizedReduction = (1 - legacyFactor)
-    / (1 - NATIVE_MATERIAL_ALPHA_FLOOR);
-  return Math.round(
-    100 * Math.pow(normalizedReduction, 1 / NATIVE_DEPTH_CURVE_EXPONENT),
-  );
 }
 
 const ROOT_CLASS = "liquid-glass-enabled";
@@ -295,13 +275,12 @@ export default class LiquidGlassPlugin extends Plugin {
         saved?.nativeFogEnabled,
         DEFAULT_SETTINGS.nativeFogEnabled,
       ),
-      nativeGlassDepth: numberSetting(
-        saved?.nativeGlassDepth,
-        typeof saved?.nativeFogRetention === "number"
-          ? legacyRetentionToDepth(saved.nativeFogRetention)
-          : DEFAULT_SETTINGS.nativeGlassDepth,
-        0,
-        100,
+      nativeGlassDepth: migrateNativeDepth(
+        saved?.nativeGlassDepth, saved?.nativeDepthSchema, saved?.nativeFogRetention,
+      ),
+      nativeDepthSchema: NATIVE_DEPTH_SCHEMA,
+      nativeEnhancedMaterial: booleanSetting(
+        saved?.nativeEnhancedMaterial, DEFAULT_SETTINGS.nativeEnhancedMaterial,
       ),
     };
 
@@ -458,7 +437,8 @@ export default class LiquidGlassPlugin extends Plugin {
   async restoreNativeBenchmark(): Promise<void> {
     this.restoreAllNativeWindows();
     this.settings.nativeFogEnabled = false;
-    this.settings.nativeGlassDepth = 0;
+    this.settings.nativeGlassDepth = NATIVE_DEPTH_MAX;
+    this.settings.nativeEnhancedMaterial = false;
     await this.saveSettings();
     new Notice("已恢复 v1.5.10 原生雾层；正文与界面设置保持不变");
   }
@@ -485,33 +465,44 @@ export default class LiquidGlassPlugin extends Plugin {
     try {
       const addon = this.getNativeAddon(hostWindow);
       const handle = bridge.getNativeWindowHandle();
-      const currentAlpha = addon.getAlpha(handle);
-      if (!Number.isFinite(currentAlpha) || currentAlpha < 0 || currentAlpha > 1) {
+      const current = addon.getState(handle);
+      if (!isNativeMaterialState(current)) {
         throw new Error(`主工作区原生玻璃层不可用：${addon.inspect(handle)}`);
       }
 
       const priorState = this.nativeWindows.get(bridge);
       const state: NativeWindowState = priorState ?? {
-        appliedAlpha: currentAlpha,
-        baselineAlpha: currentAlpha,
+        applied: { ...current },
+        baseline: { ...current },
         document: doc,
       };
-      const targetAlpha = nativeMaterialAlpha(
+      const target = nativeTargetState(
         this.settings.nativeGlassDepth,
-        state.baselineAlpha,
+        state.baseline,
+        this.settings.nativeEnhancedMaterial,
       );
       if (
         priorState
-        && Math.abs(priorState.appliedAlpha - targetAlpha) < 0.001
-        && Math.abs(currentAlpha - targetAlpha) < 0.001
+        && Math.abs(priorState.applied.alpha - target.alpha) < 0.001
+        && Math.abs(current.alpha - target.alpha) < 0.001
+        && priorState.applied.material === target.material
+        && current.material === target.material
       ) return;
 
+      // Keep the baseline available for recovery even if a write/readback fails.
+      this.nativeWindows.set(bridge, state);
       this.withNativeSentinel(() => {
-        if (!addon.setAlpha(handle, targetAlpha)) {
+        if (!addon.setState(handle, target)) {
           throw new Error("原生玻璃层拒绝了透明度更新");
         }
+        const readback = addon.getState(handle);
+        if (!isNativeMaterialState(readback)
+          || Math.abs(readback.alpha - target.alpha) >= 0.001
+          || readback.material !== target.material) {
+          throw new Error("原生玻璃层状态回读不一致");
+        }
       });
-      state.appliedAlpha = targetAlpha;
+      state.applied = target;
       state.document = doc;
       this.nativeWindows.set(bridge, state);
       this.nativeErrorNotified = false;
@@ -545,8 +536,14 @@ export default class LiquidGlassPlugin extends Plugin {
       const addon = this.getNativeAddon(hostWindow);
       const handle = bridge.getNativeWindowHandle();
       this.withNativeSentinel(() => {
-        if (!addon.setAlpha(handle, state.baselineAlpha)) {
+        if (!addon.setState(handle, state.baseline)) {
           throw new Error("无法恢复原生玻璃层");
+        }
+        const restoredState = addon.getState(handle);
+        if (!isNativeMaterialState(restoredState)
+          || Math.abs(restoredState.alpha - state.baseline.alpha) >= 0.001
+          || restoredState.material !== state.baseline.material) {
+          throw new Error("原生玻璃层未完整恢复");
         }
       });
       restored = true;
@@ -570,15 +567,9 @@ export default class LiquidGlassPlugin extends Plugin {
     if (!remote) throw new Error("Obsidian 主进程桥接不可用");
 
     const runtime = remote.process;
-    if (
-      runtime.type !== "browser"
-      || runtime.platform !== NATIVE_RUNTIME.platform
-      || runtime.arch !== NATIVE_RUNTIME.arch
-      || runtime.versions.electron !== NATIVE_RUNTIME.electron
-      || apiVersion !== NATIVE_RUNTIME.obsidian
-    ) {
+    if (!supportsNativeRuntime(runtime, apiVersion)) {
       throw new Error(
-        `运行时不匹配（需要 Obsidian ${NATIVE_RUNTIME.obsidian} / Electron ${NATIVE_RUNTIME.electron} / arm64）`,
+        `运行时不匹配（需要 Obsidian ${NATIVE_PROFILE.obsidian.join(" 或 ")} / Electron ${NATIVE_PROFILE.electron} / arm64；当前 Obsidian ${apiVersion} / Electron ${runtime.versions.electron ?? "未知"} / ${runtime.arch}）`,
       );
     }
 
@@ -587,11 +578,13 @@ export default class LiquidGlassPlugin extends Plugin {
     if (
       !addon
       || typeof addon.processId !== "function"
-      || typeof addon.getAlpha !== "function"
-      || typeof addon.setAlpha !== "function"
+      || typeof addon.getState !== "function"
+      || typeof addon.setState !== "function"
+      || typeof addon.stateVersion !== "function"
+      || addon.stateVersion() !== 2
       || addon.processId() !== runtime.pid
     ) {
-      throw new Error("原生模块未运行在 Obsidian 主进程");
+      throw new Error("原生模块协议不匹配，或未运行在 Obsidian 主进程");
     }
     this.nativeAddon = addon;
     return addon;
@@ -609,7 +602,8 @@ export default class LiquidGlassPlugin extends Plugin {
     const absolutePluginDir = isAbsolute(pluginDir)
       ? pluginDir
       : join(adapter.getBasePath(), pluginDir);
-    this.nativeAddonPath = join(absolutePluginDir, "vibrancy_alpha.node");
+    // A new filename avoids Electron remote.require's cached v1 alpha-only addon.
+    this.nativeAddonPath = join(absolutePluginDir, "vibrancy_material.node");
     this.nativeSentinelPath = join(absolutePluginDir, ".native-alpha-pending");
     return { addon: this.nativeAddonPath, sentinel: this.nativeSentinelPath };
   }
@@ -634,7 +628,8 @@ export default class LiquidGlassPlugin extends Plugin {
       if (!existsSync(sentinel)) return false;
       unlinkSync(sentinel);
       this.settings.nativeFogEnabled = false;
-      this.settings.nativeGlassDepth = 0;
+      this.settings.nativeGlassDepth = NATIVE_DEPTH_MAX;
+      this.settings.nativeEnhancedMaterial = false;
       await this.saveData({ ...this.settings });
       return true;
     } catch {
@@ -715,7 +710,7 @@ class LiquidGlassSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("深化原生透景")
-      .setDesc("只降低主工作区的 macOS 全窗原生雾层；设置与辅助窗口保持宿主背景，不改变文字、光标或正文滚动层。当前构建严格锁定本机 arm64 / Obsidian 1.13.4 / Electron 39.8.3。")
+      .setDesc("调节主工作区的 macOS 原生透景层。支持 arm64 / Obsidian 1.13.4 或 1.13.7 / Electron 39.8.3；应用前检查主进程及唯一全窗玻璃层。")
       .addToggle((toggle) =>
         toggle.setValue(settings.nativeFogEnabled).onChange(async (value) => {
           settings.nativeFogEnabled = value;
@@ -726,17 +721,27 @@ class LiquidGlassSettingTab extends PluginSettingTab {
 
     this.addSlider(
       "原生透景强度",
-      "方向已修正：0% 为 Obsidian 原始玻璃，数值越高透景越强；65% 延续上一版推荐效果；100% 为最强安全透景，仍保留必要的系统玻璃材质。",
+      "方向已修正：0 为最弱原生透景，150 为完整原生透景（相当于上一版的 0）。数值越大，原生背景透景贡献越强；不是整窗或文字的透明度。更通透的材质由下方增强开关控制。",
       settings.nativeGlassDepth,
       0,
-      100,
+      NATIVE_DEPTH_MAX,
       1,
       (value) => {
         settings.nativeGlassDepth = value;
       },
-      "%",
+      " / 150",
       false,
     );
+
+    new Setting(containerEl)
+      .setName("增强透景材质（实验）")
+      .setDesc("在原有玻璃层上使用 macOS under-window 背板材质，尝试减轻 sidebar 的厚雾感；不添加第二层玻璃或私有滤镜。实际外观随系统主题变化，关闭即恢复原材质。推荐配合强度 150 使用。")
+      .addToggle((toggle) =>
+        toggle.setValue(settings.nativeEnhancedMaterial).onChange(async (value) => {
+          settings.nativeEnhancedMaterial = value;
+          await this.plugin.saveSettings();
+        }),
+      );
 
     new Setting(containerEl)
       .setName("安全回退")
@@ -817,31 +822,23 @@ class LiquidGlassSettingTab extends PluginSettingTab {
     suffix = "%",
     rendererRefresh = true,
   ): void {
-    let valueLabel: HTMLElement;
     new Setting(this.containerEl)
       .setName(name)
       .setDesc(description)
-      .addExtraButton((button) => {
-        valueLabel = button.extraSettingsEl;
-        valueLabel.addClass("liquid-glass-value");
-        valueLabel.setText(`${value}${suffix}`);
-        button.setDisabled(true);
-      })
-      .addSlider((slider) =>
-        slider
-          .setLimits(min, max, step)
-          .setValue(value)
-          .onChange((nextValue) => {
-            assign(nextValue);
-            valueLabel.setText(`${nextValue}${suffix}`);
-            if (rendererRefresh) {
-              this.plugin.refreshDocuments();
-            } else {
-              this.plugin.scheduleNativeApply();
-            }
-            this.plugin.scheduleSettingsSave();
-          }),
-      );
+      .addSlider((slider) => {
+        slider.setLimits(min, max, step).setValue(value);
+        const updateValue = configureSliderValue(slider, suffix);
+        slider.onChange((nextValue) => {
+          assign(nextValue);
+          updateValue(nextValue);
+          if (rendererRefresh) {
+            this.plugin.refreshDocuments();
+          } else {
+            this.plugin.scheduleNativeApply();
+          }
+          this.plugin.scheduleSettingsSave();
+        });
+      });
   }
 }
 

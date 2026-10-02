@@ -2,6 +2,39 @@
 
 All notable changes to this project are documented here.
 
+## 1.5.21 — 2026-10-02
+
+### Fixed
+
+- Removed duplicate slider values on Obsidian 1.13+: sliders now use the host's inline formatter instead of adding a second value inside a fixed-size icon button.
+- Kept values such as `150 / 150` on one line with intrinsic width and non-shrinking layout. Older Obsidian hosts retain a single plain-text fallback label.
+- Preserved all translucency settings, native material behavior, and EPUB/Gallery compatibility.
+
+## 1.5.20 — 2026-10-02
+
+### Fixed
+
+- Corrected the native-depth direction following the user's on-device report: reducing the entire visual-effect view fades out the backdrop itself, rather than only reducing fog. Depth now increases native backdrop contribution: 0 is the weakest setting; 150 restores the captured full backdrop (the previous version's 0).
+- Added a persisted direction-schema marker. Earlier depth and retention settings migrate once while preserving their exact or rounding-equivalent alpha; later reloads do not reverse them again.
+
+### Added
+
+- Added an opt-in experimental under-window material profile to try a clearer backdrop without further fading out the whole native view. System appearance determines its actual appearance; it is not a private blur or refraction shader.
+- Native state now captures, validates, applies, reads back, and restores both material and alpha. The v2 addon uses `vibrancy_material.node` to avoid Electron's cached alpha-only addon.
+- Added monotonic-direction, migration, material-state, and background-only native validation tests. These do not substitute for live visual comparison after a plugin reload.
+
+## 1.5.19 — 2026-10-02
+
+### Added
+
+- Extended native translucency depth to 150%, reducing captured material alpha from 35% to 18% in the new range. This was incorrectly described as stronger translucency; the user's visual report showed the opposite. Corrected in 1.5.20.
+- Added an exact Obsidian 1.13.7 / Electron 39.8.3 / macOS arm64 host profile. Every native write still requires the browser process and exactly one full-window behind-window visual-effect view.
+- Added regression checks for the depth curve, legacy migration, and runtime rejection guards.
+
+### Validation
+
+- The installed Obsidian archive and Electron framework confirm the 1.13.7 / 39.8.3 fingerprint and the host's sidebar vibrancy path. Live native application and visual verification require reloading the installed plugin; archive inspection alone does not validate the running window hierarchy.
+
 ## 1.5.18 — 2026-09-30
 
 ### Fixed

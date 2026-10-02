@@ -2,9 +2,9 @@
 
 ## Native-code warning
 
-The optional fog-depth control is a native Node-API module. It receives Electron's macOS native window handle and modifies the alpha of a validated `NSVisualEffectView` in the Electron browser process. A native defect can terminate Obsidian; JavaScript exception handling cannot contain a process-level crash.
+The optional native-depth control is a native Node-API module. It receives Electron's macOS native window handle and modifies the alpha and, optionally, public material enum of a validated `NSVisualEffectView` in the Electron browser process. A native defect can terminate Obsidian; JavaScript exception handling cannot contain a process-level crash.
 
-Safeguards retained in v1.5.17 include exact runtime locking, process-ID verification, AppKit main-thread execution, full-window candidate validation, original-alpha restoration, and a disk crash sentinel.
+Safeguards in v1.5.20 include exact runtime locking, process-ID and addon-protocol verification, AppKit main-thread execution, full-window candidate validation, finite-alpha/public-material checks, state readback, original-alpha-and-material restoration, and a disk crash sentinel.
 
 Never disable SIP, library validation, Gatekeeper, or other macOS security controls to run this plugin. If the module does not load normally, use the CSS-only path.
 
