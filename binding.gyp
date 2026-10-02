@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "vibrancy_alpha",
+      "target_name": "vibrancy_material",
       "sources": ["native/vibrancy_alpha.mm"],
       "xcode_settings": {
         "CLANG_CXX_LANGUAGE_STANDARD": "c++17",

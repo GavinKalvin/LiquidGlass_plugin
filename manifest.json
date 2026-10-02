@@ -1,9 +1,9 @@
 {
   "id": "liquid-glass",
   "name": "Liquid Glass",
-  "version": "1.5.18",
+  "version": "1.5.21",
   "minAppVersion": "1.8.0",
-  "description": "Stable Liquid Glass surfaces with a main-window-only, version-locked native fog-depth control for this Mac.",
+  "description": "Stable Liquid Glass surfaces with direction-corrected native translucency and optional under-window material on a version-locked Mac host.",
   "author": "GavinKalvin",
   "authorUrl": "https://github.com/GavinKalvin",
   "isDesktopOnly": true

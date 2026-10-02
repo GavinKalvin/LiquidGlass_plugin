@@ -4,9 +4,9 @@
 
 Obsidian owns the native macOS translucent-window material. The plugin normally owns only static CSS state attached to Obsidian documents.
 
-The optional v1.5.15 native profile narrows its ownership to the primary workspace window and one property: the alpha of Electron's existing full-window `NSVisualEffectView`. It does not create, replace, or change the material type.
+The optional native profile owns only the primary workspace window's existing full-window `NSVisualEffectView`. As of v1.5.20 it controls that view's alpha and, when requested, its public material enum. It never creates or replaces the native view, changes Electron background/vibrancy settings, or touches WebContents opacity.
 
-The user-facing translucency-depth value is not written as an absolute view alpha. It is mapped relative to the captured host baseline through a safe curve whose physical range is `baseline` at 0% to `baseline × 0.35` at 100%. This makes higher values produce stronger translucency without allowing the clearest setting to hide the blur and vibrancy view.
+The user-facing depth is mapped relative to the captured host alpha. The v1.5.19 mapping was visually reversed on this host: alpha attenuates the whole backdrop, not just fog, and a faded backdrop can expose an opaque underlying window. V1.5.20 reverses the mapping: depth 0 produces `baseline × 0.18`; depth 150 restores `baseline`. A schema marker migrates old values exactly once to `150 − oldDepth`. The optional enhanced material uses `NSVisualEffectMaterialUnderWindowBackground` (21), not a lower-alpha endpoint. It is an appearance-dependent experiment, not a controllable blur-radius or refraction shader.
 
 ## Renderer layers
 
@@ -35,9 +35,9 @@ Settings and auxiliary documents still receive safe CSS management but never nat
 
 ## Transaction and recovery
 
-Before the first write, the plugin captures the target's baseline alpha. Every native setter call is wrapped by `.native-alpha-pending`. A normal return removes the sentinel; an interrupted call leaves it behind, causing native deepening to be disabled at the next startup.
+Before the first write, the plugin captures the target's baseline alpha and material. Every native setter call is wrapped by `.native-alpha-pending` and followed by state readback. The addon treats alpha and material as one transaction and attempts rollback on an Objective-C setter exception. A normal return removes the sentinel; an interrupted call leaves it behind, causing native deepening to be disabled at the next startup.
 
-Disabling, restoring the v1.5.10 baseline, or unloading the plugin reacquires the current native handle and restores the captured alpha. Failed restoration retains state for a later retry.
+Disabling, restoring the v1.5.10 baseline, or unloading the plugin reacquires the current native handle and restores both captured properties, verifying them by readback. Failed restoration retains state for a later retry. The v2 addon has a distinct filename so Electron cannot return its cached v1 alpha-only module.
 
 ## Performance boundary
 
